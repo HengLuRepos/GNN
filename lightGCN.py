@@ -95,5 +95,14 @@ class LightGCN(nn.Module):
         out = torch.mean(embs, dim=1)
         users, items = torch.split(out, [self.num_user, self.num_item])
         return users, items
-    
+    def forward(self, users, items):
+        user_emb, item_emb = self.propagate()
+
+        user_emb = user_emb[users]
+        item_emb = item_emb[items]
+
+        scores = torch.mul(user_emb, item_emb).sum(dim=1)
+        return scores
+    def bpr_loss(self):
+        pass
     
