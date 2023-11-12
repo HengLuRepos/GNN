@@ -3,7 +3,7 @@ import torch.nn as nn
 import os
 import numpy as np
 import scipy.sparse as sp
-
+import torch.nn.functional as F
 class Dataset:
     def __init__(self, path, train=True):
         file = path + 'train.txt' if train else path + 'test.txt'
@@ -34,20 +34,19 @@ class Dataset:
                                             shape=(self.num_user,self.num_item))
         
         self.Graph = None
+        self.build_graph()
     def _sp_to_torch(self,x):
         coo = x.tocoo().astype(np.float32)
         row = torch.LongTensor(coo.row)
         col = torch.LongTensor(coo.col)
         ind = torch.stack([row,col])
         data = torch.FloatTensor(coo.data)
-        return torch.sparse.FloatTensor(index,data, torch.Size(coo.shape))
+        return torch.sparse.FloatTensor(ind,data, torch.Size(coo.shape))
     def build_graph(self):
-        adj_mat = sp.dok_matrix((self.num_item + self.num_user, self.num_item + self.num_user), dtype=np.float_32)
-        adj_mat = adj_mat.tolil()
-        R = self.userItemMatrix.tolil()
-        adj_mat[:self.n_users, self.n_users:] = R
-        adj_mat[self.n_users:, :self.n_users] = R.T
-        adj_mat = adj_mat.todok()
+
+        R = self.userItemMatrix.tocsr().astype(np.float32)
+        adj_mat = sp.bmat([[None, R], [R.T.tocsr().astype(np.float32), None]], format="csr", dtype=np.float32)
+
 
         rowsum = np.array(adj_mat.sum(axis=1))
         d_inv = np.power(rowsum, -0.5).flatten()
@@ -66,10 +65,19 @@ class Dataset:
         return self.num_user
     def get_item_number(self):
         return self.num_item
+    def get_positive_items(self, users):
+        positive_items = []
+
+        for user in users:
+            pos_item = self.userItemMatrix[user].nonzero()[1]
+            positive_items.append(pos_item)
+
+        return positive_items
 
 class LightGCN(nn.Module):
     def __init__(self, dataset: Dataset, config):
         super().__init__()
+        self.dataset = dataset
         self.num_user = dataset.get_user_number()
         self.num_item = dataset.get_item_number()
         self.graph = dataset.get_graph()
@@ -82,13 +90,16 @@ class LightGCN(nn.Module):
         self.embedding_item = nn.Embedding(
             num_embeddings=self.num_item,
             embedding_dim=self.embedding_dim)
+        nn.init.normal_(self.embedding_user.weight)
+        nn.init.normal_(self.embedding_item.weight)
 
     def propagate(self):
         user_weight = self.embedding_user.weight
         item_weight = self.embedding_item.weight
         embed = torch.cat([user_weight, item_weight])
+        
         embs = [embed]
-        for layer in self.layers:
+        for layer in range(self.layers):
             embed = torch.sparse.mm(self.graph, embed)
             embs.append(embed)
         embs = torch.stack(embs, dim=1)
@@ -103,6 +114,21 @@ class LightGCN(nn.Module):
 
         scores = torch.mul(user_emb, item_emb).sum(dim=1)
         return scores
-    def bpr_loss(self):
-        pass
+    def bpr_loss(self, users):
+        pos_items = self.dataset.get_positive_items(users)
+        user_embs, item_embs = self.propagate()
+        loss = 0.0
+        for index, user in enumerate(users):
+            user_emb = user_embs[user]
+            pos_item = pos_items[index]
+            pos_embs = item_embs[pos_item]
+            neg_item = ~np.isin(range(self.num_item), pos_item)
+            neg_embs = item_embs[neg_item]
+            yui = torch.mul(user_emb, pos_embs).sum(axis=1)
+            yuj = torch.mul(user_emb, neg_embs).sum(axis=1, keepdim=True)
+            loss += F.softplus(yuj - yui).sum()
+        return loss
+
+            
+
     
