@@ -41,7 +41,7 @@ class Dataset:
         col = torch.LongTensor(coo.col)
         ind = torch.stack([row,col])
         data = torch.FloatTensor(coo.data)
-        return torch.sparse.FloatTensor(ind,data, torch.Size(coo.shape))
+        return torch.sparse.FloatTensor(ind,data, torch.Size(coo.shape)).to_sparse_csr()
     def build_graph(self):
 
         R = self.userItemMatrix.tocsr().astype(np.float32)
@@ -121,6 +121,7 @@ class LightGCN(nn.Module):
         return scores
     def bpr_loss(self, users, pos_items, neg_items):
         user_embs, item_embs = self.propagate()
+        print(self.graph[0])
         loss = 0.0
         for index, user in enumerate(users):
             user_emb = user_embs[user]

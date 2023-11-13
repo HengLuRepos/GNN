@@ -9,4 +9,6 @@ from lightGCN import Dataset, LightGCN
 class SimGCL(LightGCN):
     def __init__(self, dataset: Dataset, config):
         super.__init__(dataset, config)
+        self.noise_norm = config.noise_norm
+        self.lam = config.lam
         
