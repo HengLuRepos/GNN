@@ -31,7 +31,7 @@ class Dataset:
 
         self.userItemMatrix = sp.csr_matrix((np.ones(len(self.users)), 
                                             (self.users, self.items)), 
-                                            shape=(self.num_user,self.num_item))
+                                            shape=(self.num_user,self.num_item), dtype=np.float32)
         
         self.Graph = None
         self.build_graph()
@@ -45,7 +45,12 @@ class Dataset:
     def build_graph(self):
 
         R = self.userItemMatrix.tocsr().astype(np.float32)
-        adj_mat = sp.bmat([[None, R], [R.T.tocsr().astype(np.float32), None]], format="csr", dtype=np.float32)
+        upper = sp.csc_matrix((self.num_user, self.num_user), dtype=np.float32)
+        upper = sp.hstack([upper, R.tocsc()])
+        lower = sp.csc_matrix((self.num_item, self.num_item),dtype=np.float32)
+        lower = sp.hstack([R.T.tocsc(), lower])
+        adj_mat = sp.vstack([upper.tocsr(), lower.tocsr()])
+        #adj_mat = sp.bmat([[None, R], [R.T.tocsr().astype(np.float32), None]], format="csr", dtype=np.float32)
 
 
         rowsum = np.array(adj_mat.sum(axis=1))
@@ -80,7 +85,7 @@ class LightGCN(nn.Module):
         self.dataset = dataset
         self.num_user = dataset.get_user_number()
         self.num_item = dataset.get_item_number()
-        self.graph = dataset.get_graph()
+        self.graph = nn.Parameter(dataset.get_graph(), requires_grad=False)
         self.embedding_dim = config.embedding_dim
         self.lr = config.lr
         self.layers = config.layers
@@ -114,19 +119,18 @@ class LightGCN(nn.Module):
 
         scores = torch.mul(user_emb, item_emb).sum(dim=1)
         return scores
-    def bpr_loss(self, users):
-        pos_items = self.dataset.get_positive_items(users)
+    def bpr_loss(self, users, pos_items, neg_items):
         user_embs, item_embs = self.propagate()
         loss = 0.0
         for index, user in enumerate(users):
             user_emb = user_embs[user]
             pos_item = pos_items[index]
             pos_embs = item_embs[pos_item]
-            neg_item = ~np.isin(range(self.num_item), pos_item)
+            neg_item = neg_items[index]
             neg_embs = item_embs[neg_item]
             yui = torch.mul(user_emb, pos_embs).sum(axis=1)
             yuj = torch.mul(user_emb, neg_embs).sum(axis=1, keepdim=True)
-            loss += F.softplus(yuj - yui).sum()
+            loss += F.softplus(yuj - yui).mean()
         return loss
 
             
