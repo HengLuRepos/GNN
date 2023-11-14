@@ -12,3 +12,4 @@ class Config:
 
         self.noise_norm = 1e-1
         self.lam = 0.5
+        self.tau = 0.2
