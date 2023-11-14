@@ -29,8 +29,27 @@ class SimGCL(LightGCN):
         out = torch.mean(embs, dim=1)
         users, items = torch.split(out, [self.num_user, self.num_item])
         return users, items
-    def cl_loss(self):
+    def cl_loss(self, users, items):
         user_noise_1, items_noise_1 = self.noise_propagate()
         user_noise_2, items_noise_2 = self.noise_propagate()
-        
-        
+
+        user_noise_1 /= torch.norm(user_noise_1, p=2, dim=1, keepdim=True)
+        user_noise_2 /= torch.norm(user_noise_2, p=2, dim=1, keepdim=True)
+
+        pos_user_pairs = torch.sum(user_noise_1 * user_noise_2, axis=1)
+        pos_user_pairs = torch.exp(pos_user_pairs / self.tau) 
+        all_user_pairs = torch.matmul(user_noise_1, user_noise_2.T)
+        all_user_pairs = torch.exp(all_user_pairs / self.tau).sum(axis=1)
+        cl_user_loss = torch.sum(-torch.log(pos_user_pairs/(all_user_pairs - pos_user_pairs)))
+
+
+        items_noise_1 /= torch.norm(items_noise_1, p=2, dim=1, keepdim=True)
+        items_noise_2 /= torch.norm(items_noise_2, p=2, dim=1, keepdim=True)
+
+        pos_item_pairs = torch.sum(items_noise_1 * items_noise_2, axis=1)
+        pos_item_pairs = torch.exp(pos_item_pairs / self.tau)
+        all_item_pairs = torch.matmul(items_noise_1, items_noise_2.T)
+        all_item_pairs = torch.exp(all_item_pairs / self.tau).sum(axis=1)
+        cl_item_loss = torch.sum(-torch.log(pos_item_pairs/(all_item_pairs - pos_item_pairs)))
+
+        return cl_user_loss + cl_item_loss
