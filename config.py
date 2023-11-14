@@ -9,7 +9,11 @@ class Config:
         self.user_sample = 500
         self.pos_number = 1
         self.lr = 1e-3
-
+        #simGCL
         self.noise_norm = 1e-1
         self.lam = 0.5
         self.tau = 0.2
+        #JGCF
+        self.a = 1.0
+        self.b = 1.0
+        self.alpha = 0.2
