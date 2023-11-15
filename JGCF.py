@@ -19,6 +19,9 @@ class JGCF(LightGCN):
         item_weight = self.embedding_item.weight
         embed = torch.cat([user_weight, item_weight])
 
+        p0 = eye
+        p1 = (self.a - self.b)/2 * eye + (self.a + self.b)/2 * self.graph
+
         embs = [torch.sparse.mm(eye, embed), torch.sparse.mm(p1, embed)]
         for k in range(2, self.layers + 1):
             theta_1 = (2*k + self.a + self.b) * (2*k + self.a + self.b - 1) / ((k + self.a + self.b) * 2*k)
