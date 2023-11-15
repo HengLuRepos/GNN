@@ -32,4 +32,4 @@ for ep in range(cfg.epoch):
         loss.backward()
         optimizer.step()
         print(f"Ep {ep} batch {batch}: Loss {loss.item():.4f}")
-    torch.save(agent.state_dict(), "models/jgcf.pt")
+    torch.save(agent.state_dict(), "models/simgcl.pt")
