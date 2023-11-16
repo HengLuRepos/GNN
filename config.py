@@ -5,8 +5,8 @@ class Config:
         self.embedding_dim = 64
         self.weight_decay = 1e-4
         self.epoch = 1000
-        self.neg_ratio = 4
-        self.user_sample = 500
+        self.neg_ratio = 3
+        self.user_sample = 512
         self.pos_number = 1
         self.lr = 1e-3
         #simGCL

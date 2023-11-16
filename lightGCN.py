@@ -95,8 +95,8 @@ class LightGCN(nn.Module):
         self.embedding_item = nn.Embedding(
             num_embeddings=self.num_item,
             embedding_dim=self.embedding_dim)
-        nn.init.normal_(self.embedding_user.weight, std=0.1)
-        nn.init.normal_(self.embedding_item.weight, std=0.1)
+        nn.init.xavier_normal_(self.embedding_user.weight)
+        nn.init.xavier_normal_(self.embedding_item.weight)
 
     def propagate(self):
         user_weight = self.embedding_user.weight
