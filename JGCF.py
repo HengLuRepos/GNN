@@ -14,7 +14,7 @@ class JGCF(LightGCN):
         self.alpha = config.alpha
     def propagate(self):
         all_num = self.num_user + self.num_item
-        eye = torch.sparse_coo_tensor([range(all_num),range(all_num)],torch.ones(all_num), dtype=torch.float32)
+        eye = torch.sparse_coo_tensor([range(all_num),range(all_num)],torch.ones(all_num), dtype=torch.float32, device=self.graph.device)
         user_weight = self.embedding_user.weight
         item_weight = self.embedding_item.weight
         embed = torch.cat([user_weight, item_weight])
