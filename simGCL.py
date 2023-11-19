@@ -24,7 +24,8 @@ class SimGCL(LightGCN):
             norms = torch.norm(noise, p=2, dim=1, keepdim=True)
             noise /= norms
             noise *= torch.sign(prod) * self.noise_norm
-            embs.append(prod + noise)
+            embed = prod + noise
+            embs.append(embed)
         embs = torch.stack(embs, dim=1)
         out = torch.mean(embs, dim=1)
         users, items = torch.split(out, [self.num_user, self.num_item])
