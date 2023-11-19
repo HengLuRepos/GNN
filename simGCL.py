@@ -20,7 +20,7 @@ class SimGCL(LightGCN):
         embs = []
         for layer in range(self.layers):
             prod = torch.sparse.mm(self.graph, embed)
-            noise = torch.rand(prod.shape)
+            noise = torch.rand(prod.shape, device = self.graph.device)
             norms = torch.norm(noise, p=2, dim=1, keepdim=True)
             noise /= norms
             noise *= torch.sign(prod) * self.noise_norm
