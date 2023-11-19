@@ -3,7 +3,7 @@ class Config:
         #for lightGCN
         self.layers = 3
         self.embedding_dim = 64
-        self.weight_decay = 1e-4
+        self.weight_decay = 1e-6
         self.epoch = 1000
         self.neg_ratio = 3
         self.user_sample = 512
@@ -14,6 +14,6 @@ class Config:
         self.lam = 0.5
         self.tau = 0.2
         #JGCF
-        self.a = 1.0
-        self.b = 1.0
-        self.alpha = 0.2
+        self.a = 2.0
+        self.b = 1.1
+        self.alpha = 0.1

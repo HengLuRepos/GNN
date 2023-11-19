@@ -132,6 +132,11 @@ class LightGCN(nn.Module):
             yuj = torch.mul(user_emb, neg_embs).sum(axis=1, keepdim=True)
             loss += F.softplus(yuj - yui).mean()
         return loss
+    def get_ratings(self, users):
+        user_emb, item_emb = self.propagate()
+        user_emb = user_emb[users]
+        ratings = torch.matmul(user_emb, item_emb.T)
+        return ratings
 
             
 

@@ -25,7 +25,7 @@ for ep in range(cfg.epoch):
                     neg_item_user.append(item)
             neg_items.append(neg_item_user)
 
-        loss = agent.bpr_loss(users_index, pos_items, neg_items)
+        loss = agent.batch_bpr_loss(users_index, pos_items, neg_items)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
